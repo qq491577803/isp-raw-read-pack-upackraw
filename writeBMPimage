@@ -1,0 +1,95 @@
+#include<iostream>
+#include<opencv2/opencv.hpp>
+#include<math.h>
+#include<time.h>
+#include<vector>
+using namespace cv;
+using namespace std;
+
+void writeBMP()
+{
+	//refer:https://blog.csdn.net/weixin_42910064/article/details/103862934
+// def 文件头file header
+	struct BMPfileHeader {
+		unsigned short type;//"BM"->0x424D ->小端->4D42
+		unsigned long size;//BMP文件所占字节数
+		unsigned short resv1;//保留字段 ,默认0
+		unsigned short resv2;//保留字段，默认0
+		unsigned long offBits;//图像数据地址相对于文件开始地址的偏移量
+	};
+	//def 信息头info header
+	struct BMPinfoHeader {
+		unsigned long biSize;//infor header 大小
+		unsigned long biWidth;//图像宽度
+		unsigned long biHeight;//图像高度
+		unsigned short biPlanes;//默认值1
+		unsigned short biBitCount;//位深，可以设置1,4,8,16,24,32，对于8bitRGB图8*3=24
+		unsigned long biCompression;//压缩方式，设置为BI_RGB即不压缩
+		unsigned long biSizeImage;//图像数据所占位数
+		unsigned long biXPelsPerMeter;//X轴分辨率，24位的设为默认值即可
+		unsigned long biYPelsPerMeter;//Y轴分辨率，24位的设为默认值即可
+		unsigned long biClrUsed;//调色板使用数量，0表示使用所有调色板
+		unsigned long biClrImportant;//重要的调色板索引，0表示所有调色板都重要
+	};
+	//write header
+	char iPath[256] = "C:\\Users\\Administrator\\Desktop\\cat.jpeg";
+	char oPath[256] = "C:\\Users\\Administrator\\Desktop\\cat.bmp";
+	FILE *bmpBuff = fopen(oPath,"wb");
+	cv::Mat Image = cv::imread(iPath);
+	printf("Image rows = %d, cols = %d\n",Image.rows,Image.cols);
+
+	BMPfileHeader fileHeader;
+	BMPinfoHeader infoHeader;
+	unsigned int fileHeadSize = (3 * sizeof(unsigned short) + 2 * sizeof(unsigned long));
+	unsigned int infoHeadSize = (9 * sizeof(unsigned long) + 2 * sizeof(unsigned short));
+	unsigned long imageSize = Image.rows*Image.cols * sizeof(unsigned char);
+	cout << "fileHeadSize =" << sizeof(fileHeader) << endl;
+	cout << "infoHeader =" << sizeof(infoHeader) << endl;
+	cout << "header size =" << (fileHeadSize + infoHeadSize) << endl;
+	//build file header
+	fileHeader.type = 0x4d42;
+	fileHeader.size = fileHeadSize + infoHeadSize + imageSize;
+	fileHeader.resv1 = 0;
+	fileHeader.resv2 = 0;
+	fileHeader.offBits = fileHeadSize + infoHeadSize;
+	//build info header
+	infoHeader.biSize = infoHeadSize;
+	infoHeader.biHeight = Image.rows;
+	infoHeader.biWidth = Image.cols;
+	infoHeader.biPlanes = 1;
+	infoHeader.biBitCount = 24;
+	infoHeader.biCompression = 0;
+	infoHeader.biSizeImage = imageSize;
+	infoHeader.biXPelsPerMeter = 0;
+	infoHeader.biYPelsPerMeter = 0;
+	infoHeader.biClrUsed = 0;
+	infoHeader.biClrImportant = 0;
+
+	//write header  由于file head size 非8字节对齐，要分开写入，不然有问题
+	fwrite(&(fileHeader.type),sizeof(fileHeader.type),1,bmpBuff);
+	fwrite(&(fileHeader.size), sizeof(fileHeader.size), 1, bmpBuff);
+	fwrite(&(fileHeader.resv1), sizeof(fileHeader.resv1), 1, bmpBuff);
+	fwrite(&(fileHeader.resv2), sizeof(fileHeader.resv2), 1, bmpBuff);
+	fwrite(&(fileHeader.offBits), sizeof(fileHeader.offBits), 1, bmpBuff);
+	//fwrite(&(fileHeader), fileHeadSize, 1, bmpBuff);
+	fwrite(&(infoHeader), sizeof(infoHeader), 1, bmpBuff);
+	//write image
+	unsigned char tmp = 0;
+	for(int row = Image.rows - 1;row >= 0 ; row --)
+		for (int col = 0; col < Image.cols; col++)
+		{
+			tmp = Image.at<cv::Vec3b>(row, col)[0];
+			fwrite(&(tmp), 1, 1, bmpBuff);
+			tmp = Image.at<cv::Vec3b>(row, col)[1];
+			fwrite(&(tmp), 1, 1, bmpBuff);
+			tmp = Image.at<cv::Vec3b>(row, col)[2];
+			fwrite(&(tmp), 1, 1, bmpBuff);
+		}
+	fclose(bmpBuff);
+}
+
+int main()
+{
+	writeBMP();
+	system("pause");
+}
