@@ -1,0 +1,42 @@
+int cols = 4096;
+int rows = 3072;
+unsigned short rawBuff[4096 * 3072];
+void cropRaw(char *iPath, char *oPath)
+{
+    struct cropInfo
+    {
+        unsigned short topRow;
+        unsigned short topCol;
+        unsigned short cropWidth;
+        unsigned short cropHeight;
+    };
+    cropInfo window;
+    window.topRow = 0;
+    window.topCol = 0;
+    window.cropHeight = 1536;
+    window.cropWidth = 2048;
+
+    FILE *iFile = fopen(iPath, "rb");
+    FILE *oFile = fopen(oPath, "wb");
+    fread(rawBuff, sizeof(unsigned short), cols*rows, iFile);
+
+    int row = 0, col = 0;
+    int rowMin = window.topRow;
+    int rowMax = window.topRow + window.cropHeight - 1;
+    int colMin = window.topCol;
+    int colMax = window.topCol + window.cropWidth - 1;
+
+    unsigned short tmp = 0;
+    for (unsigned long long index = 0; index < rows * cols; index++)
+    {
+        col = index % cols;
+        row = index / cols;
+        if (col >= colMin && col <= colMax && row >= rowMin && row <= rowMax)
+        {
+            tmp = rawBuff[index];
+            fwrite(&tmp, sizeof(unsigned short), 1, oFile);
+        }
+    }
+    fclose(iFile);
+    fclose(oFile);
+}
