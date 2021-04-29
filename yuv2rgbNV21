@@ -1,0 +1,22 @@
+cv::Mat yuv2rgbNV21(string path)
+{
+    const int width = 4096;
+    const int height = 3072;
+    std::ifstream file_in;
+    file_in.open(path, std::ios::binary);
+    std::filebuf *p_filebuf = file_in.rdbuf();
+    size_t size = p_filebuf->pubseekoff(0, std::ios::end, std::ios::in);
+    p_filebuf->pubseekpos(0, std::ios::in);
+
+    char *buf_src = new char[size];
+    p_filebuf->sgetn(buf_src, size);
+
+    cv::Mat mat_src = cv::Mat(height*1.5, width, CV_8UC1, buf_src);
+    cv::Mat mat_dst = cv::Mat(height, width, CV_8UC3);
+
+    cv::cvtColor(mat_src, mat_dst, cv::COLOR_YUV2BGR_NV12);
+    //cv::resize(mat_dst, mat_dst, cv::Size(600, 400));
+    //cv::imshow("res", mat_dst);
+    //cv::waitKey(0);
+    return  mat_dst;
+}
